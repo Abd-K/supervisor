@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'orphan_form.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Orphan Supervisor',
+      title: 'Supervisor',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green,
@@ -44,11 +45,13 @@ class SupervisorHomePage extends StatefulWidget {
 class _SupervisorHomePageState extends State<SupervisorHomePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _currentIndex = -1; // Start with no tab selected
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Don't set an initial index, keeping tabs collapsed
   }
 
   @override
@@ -64,6 +67,11 @@ class _SupervisorHomePageState extends State<SupervisorHomePage>
         title: const Text('Orphan Supervisor'),
         bottom: TabBar(
           controller: _tabController,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
           tabs: const [
             Tab(
               icon: Icon(Icons.dashboard),
@@ -80,14 +88,21 @@ class _SupervisorHomePageState extends State<SupervisorHomePage>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          DashboardTab(),
-          ListTab(),
-          FormTab(),
-        ],
-      ),
+      body: _currentIndex == -1 
+        ? const Center(
+            child: Text(
+              'Select a tab to view content',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+          )
+        : TabBarView(
+            controller: _tabController,
+            children: const [
+              DashboardTab(),
+              ListTab(),
+              FormTab(),
+            ],
+          ),
     );
   }
 }
@@ -128,12 +143,6 @@ class FormTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Form Tab\nContent will be built here',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 18),
-      ),
-    );
+    return const OrphanForm();
   }
 }
