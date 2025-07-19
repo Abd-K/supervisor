@@ -1,5 +1,19 @@
 import 'package:flutter/material.dart';
 
+class OrphanFormPage extends StatelessWidget {
+  const OrphanFormPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Orphan Form'),
+      ),
+      body: const OrphanForm(),
+    );
+  }
+}
+
 class OrphanForm extends StatefulWidget {
   const OrphanForm({super.key});
 
