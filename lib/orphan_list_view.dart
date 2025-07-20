@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'models/orphan.dart';
 import 'orphan_form.dart';
 import 'orphan_actions_screen.dart';
+import 'dart:io';
 
 class OrphanListView extends StatefulWidget {
   const OrphanListView({super.key});
@@ -56,7 +57,7 @@ class _OrphanListViewState extends State<OrphanListView> {
         familyName: 'Al-Rashid',
         dateOfBirth: '15/03/2015',
         gender: 'Male',
-        status: OrphanStatus.good,
+        status: OrphanStatus.active,
         hasPaymentAvailable: true,
         hasPendingActions: false,
         createdAt: DateTime.now().subtract(const Duration(days: 30)),
@@ -64,18 +65,19 @@ class _OrphanListViewState extends State<OrphanListView> {
         isSynced: true,
       ),
       OrphanData(
-        id: '2',
-        firstName: 'Fatima',
-        fatherName: 'Ali',
-        familyName: 'Hassan',
-        dateOfBirth: '22/07/2013',
-        gender: 'Female',
-        status: OrphanStatus.missing,
+        id: '60e4ca3d-f089-4fc1-bba8-4dc18c25cc6b',
+        firstName: 'نور',
+        fatherName: 'حسين',
+        familyName: 'السلامة',
+        dateOfBirth: '27/04/2020', // 1587993890 epoch seconds to date
+        gender: 'Female', // 0 = Female
+        status: OrphanStatus.active, // 0 = active
         hasPaymentAvailable: false,
         hasPendingActions: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 60)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 10)),
+        createdAt: DateTime.fromMillisecondsSinceEpoch(1753017890 * 1000), // last_updated
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(1753017890 * 1000), // last_updated
         isSynced: false,
+        profileImage: File('/storage/emulated/0/Download/noor.jpg'),
       ),
       OrphanData(
         id: '3',
@@ -98,7 +100,7 @@ class _OrphanListViewState extends State<OrphanListView> {
         familyName: 'Al-Zahra',
         dateOfBirth: '03/05/2014',
         gender: 'Female',
-        status: OrphanStatus.good,
+        status: OrphanStatus.active,
         hasPaymentAvailable: false,
         hasPendingActions: false,
         createdAt: DateTime.now().subtract(const Duration(days: 45)),
@@ -185,7 +187,7 @@ class _OrphanListViewState extends State<OrphanListView> {
 
   Color _getStatusColor(OrphanStatus status) {
     switch (status) {
-      case OrphanStatus.good:
+      case OrphanStatus.active:
         return Colors.green;
       case OrphanStatus.missing:
         return Colors.red;
@@ -196,8 +198,8 @@ class _OrphanListViewState extends State<OrphanListView> {
 
   String _getStatusText(OrphanStatus status) {
     switch (status) {
-      case OrphanStatus.good:
-        return 'Good';
+      case OrphanStatus.active:
+        return 'Active';
       case OrphanStatus.missing:
         return 'Missing';
       case OrphanStatus.unknown:
@@ -268,7 +270,6 @@ class _OrphanListViewState extends State<OrphanListView> {
                 : RefreshIndicator(
                     onRefresh: () async {
                       // TODO: Implement refresh from database/API
-                      await Future.delayed(const Duration(seconds: 1));
                       setState(() {
                         _loadDummyData();
                       });
@@ -725,15 +726,23 @@ class _OrphanListViewState extends State<OrphanListView> {
         ),
       ),
       child: ClipOval(
-        child: orphan.profileImage != null && orphan.profileImage!.existsSync()
-            ? Image.file(
-                orphan.profileImage!,
+        child: orphan.id == '60e4ca3d-f089-4fc1-bba8-4dc18c25cc6b'
+            ? Image.asset(
+                'assets/images/noor.jpg',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return _buildDefaultAvatar(orphan);
                 },
               )
-            : _buildDefaultAvatar(orphan),
+            : orphan.profileImage != null && orphan.profileImage!.existsSync()
+                ? Image.file(
+                    orphan.profileImage!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildDefaultAvatar(orphan);
+                    },
+                  )
+                : _buildDefaultAvatar(orphan),
       ),
     );
   }

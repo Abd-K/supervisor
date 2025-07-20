@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:intl/intl.dart';
 
-enum OrphanStatus { good, missing, unknown }
+enum OrphanStatus { active, missing, unknown }
 
 enum EducationType { academic, vocational }
 

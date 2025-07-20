@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'models/orphan.dart';
 import 'orphan_form.dart';
 import 'evidence_upload_page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:developer' as developer;
+import 'dart:async';
+import 'dart:io';
+
+// TODO: Update this URL with your current ngrok URL
+const String API_BASE_URL = 'https://753f06e15b5f.ngrok-free.app';
+const String API_KEY = 'orphan_hq_demo_2025';
 
 class OrphanActionsScreen extends StatefulWidget {
   final OrphanData orphan;
@@ -17,13 +26,20 @@ class OrphanActionsScreen extends StatefulWidget {
 
 class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
   bool _isLoading = false;
+  late OrphanData _orphan;
+
+  @override
+  void initState() {
+    super.initState();
+    _orphan = widget.orphan;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.orphan.displayName, 
+          _orphan.displayName,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.green,
@@ -38,7 +54,7 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
             // Orphan summary card
             _buildOrphanSummaryCard(),
             const SizedBox(height: 24),
-            
+
             // Actions title
             const Text(
               'Available Actions',
@@ -49,13 +65,13 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Action cards
-            if (widget.orphan.hasPaymentAvailable) _buildPaymentActionCard(),
-            if (!widget.orphan.isSynced) _buildSyncActionCard(),
+            if (_orphan.hasPaymentAvailable) _buildPaymentActionCard(),
+            if (!_orphan.isSynced) _buildSyncActionCard(),
             _buildUpdateStatusActionCard(),
             _buildUpdateDetailsActionCard(),
-            
+
             const SizedBox(height: 24),
           ],
         ),
@@ -82,21 +98,36 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: _getStatusColor(widget.orphan.status),
+                      color: _getStatusColor(_orphan.status),
                       width: 3,
                     ),
                   ),
                   child: ClipOval(
-                    child: widget.orphan.profileImage != null && 
-                           widget.orphan.profileImage!.existsSync()
+                    child: _orphan.id == '60e4ca3d-f089-4fc1-bba8-4dc18c25cc6b'
+                        ? Image.asset(
+                            'assets/images/noor.jpg',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[200],
+                                child: Icon(
+                                  _orphan.gender == 'Male' ? Icons.boy : Icons.girl,
+                                  size: 40,
+                                  color: Colors.grey[400],
+                                ),
+                              );
+                            },
+                          )
+                        : _orphan.profileImage != null && 
+                           _orphan.profileImage!.existsSync()
                         ? Image.file(
-                            widget.orphan.profileImage!,
+                            _orphan.profileImage!,
                             fit: BoxFit.cover,
                           )
                         : Container(
                             color: Colors.grey[200],
                             child: Icon(
-                              widget.orphan.gender == 'Male' ? Icons.boy : Icons.girl,
+                              _orphan.gender == 'Male' ? Icons.boy : Icons.girl,
                               size: 40,
                               color: Colors.grey[400],
                             ),
@@ -104,14 +135,14 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                
+
                 // Orphan info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.orphan.displayName,
+                        _orphan.displayName,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -126,7 +157,7 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      
+
                       // Status badge
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -134,11 +165,11 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(widget.orphan.status),
+                          color: _getStatusColor(_orphan.status),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          _getStatusText(widget.orphan.status),
+                          _getStatusText(_orphan.status),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -151,9 +182,9 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Status indicators
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -161,19 +192,19 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                 _buildStatusIndicator(
                   icon: Icons.account_balance_wallet,
                   label: 'Payment',
-                  isActive: widget.orphan.hasPaymentAvailable,
+                  isActive: _orphan.hasPaymentAvailable,
                   color: Colors.green,
                 ),
                 _buildStatusIndicator(
                   icon: Icons.notification_important,
                   label: 'Pending',
-                  isActive: widget.orphan.hasPendingActions,
+                  isActive: _orphan.hasPendingActions,
                   color: Colors.orange,
                 ),
                 _buildStatusIndicator(
                   icon: Icons.sync,
                   label: 'Synced',
-                  isActive: widget.orphan.isSynced,
+                  isActive: _orphan.isSynced,
                   color: Colors.blue,
                 ),
               ],
@@ -241,10 +272,10 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
   Widget _buildUpdateStatusActionCard() {
     return _buildActionCard(
       title: 'Update Status',
-      subtitle: 'Change orphan status (Good, Missing, Unknown)',
-      icon: Icons.update,
+      subtitle: 'Change the status of the orphan (e.g., missing)',
+      icon: Icons.edit,
       iconColor: Colors.orange,
-      onTap: () => _showStatusUpdateDialog(),
+      onTap: () => _showUpdateStatusDialog(),
     );
   }
 
@@ -329,146 +360,229 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
     );
   }
 
-  void _navigateToEvidenceUpload() async {
-    final result = await Navigator.of(context).push(
+  void _navigateToEvidenceUpload() {
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const EvidenceUploadPage(),
       ),
     );
-    
-    // If evidence was uploaded successfully, navigate back to the list
-    if (result == true) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Evidence uploaded for ${widget.orphan.displayName}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Navigate back to list
-        Navigator.pop(context, true);
-      }
-    }
   }
 
-  void _showStatusUpdateDialog() {
-    OrphanStatus? selectedStatus = widget.orphan.status;
+  void _syncData() {
+    // TODO: Implement data synchronization logic
+    setState(() {
+      _isLoading = true;
+    });
+
+    // TODO: Make actual API call here
+    setState(() {
+      _isLoading = false;
+      // _orphan = _orphan.copyWith(isSynced: true);
+    });
     
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Update Status'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Update status for ${widget.orphan.displayName}:'),
-              const SizedBox(height: 16),
-              ...OrphanStatus.values.map(
-                (status) => RadioListTile<OrphanStatus>(
-                  title: Text(_getStatusText(status)),
-                  value: status,
-                  groupValue: selectedStatus,
-                  activeColor: Colors.green,
-                  onChanged: (value) {
-                    setDialogState(() {
-                      selectedStatus = value;
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: selectedStatus != widget.orphan.status
-                  ? () {
-                      Navigator.pop(context);
-                      _updateStatus(selectedStatus!);
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Update'),
-            ),
-          ],
-        ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Data synced successfully!'),
+        backgroundColor: Colors.green,
       ),
     );
   }
 
-  Future<void> _syncData() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      // TODO: Implement actual data sync
-      await Future.delayed(const Duration(seconds: 2));
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Data synced for ${widget.orphan.displayName}'),
-            backgroundColor: Colors.blue,
-          ),
+  void _showUpdateStatusDialog() {
+    OrphanStatus? selectedStatus = _orphan.status;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Update Orphan Status'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: OrphanStatus.values.map((status) {
+                  return RadioListTile<OrphanStatus>(
+                    title: Text(_getStatusText(status)),
+                    value: status,
+                    groupValue: selectedStatus,
+                    onChanged: (OrphanStatus? value) {
+                      setState(() {
+                        selectedStatus = value;
+                      });
+                    },
+                    activeColor: _getStatusColor(status),
+                    secondary: Icon(
+                      Icons.circle,
+                      color: _getStatusColor(status),
+                    ),
+                  );
+                }).toList(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (selectedStatus != null) {
+                      Navigator.of(context).pop(); // Close dialog first
+                      _updateOrphanStatus(selectedStatus!); // Then update status
+                    }
+                  },
+                  child: const Text('Update'),
+                ),
+              ],
+            );
+          },
         );
-        
-        // Navigate back to list
-        Navigator.pop(context, true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to sync data'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+      },
+    );
   }
 
-  Future<void> _updateStatus(OrphanStatus newStatus) async {
-    setState(() => _isLoading = true);
-    
+  Future<void> _updateOrphanStatus(OrphanStatus newStatus) async {
     try {
-      // TODO: Implement actual status update
-      // TODO: Mustafa and Bilal update data base and call API
-      await Future.delayed(const Duration(seconds: 1));
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Status updated for ${widget.orphan.displayName}'),
-            backgroundColor: Colors.orange,
-          ),
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Check internet connectivity first
+      try {
+        final result = await InternetAddress.lookup('google.com');
+        if (result.isEmpty || result[0].rawAddress.isEmpty) {
+          throw SocketException('No Internet connection');
+        }
+      } on SocketException catch (_) {
+        throw SocketException('No Internet connection');
+      }
+
+      // Convert OrphanStatus to the API's expected string format
+      String statusString;
+      switch (newStatus) {
+        case OrphanStatus.missing:
+          statusString = 'missing';
+          break;
+        case OrphanStatus.active:
+          statusString = 'active';
+          break;
+        case OrphanStatus.unknown:
+          statusString = 'found'; // Map unknown to found for API compatibility
+          break;
+      }
+
+      developer.log('Updating orphan status',
+          name: 'OrphanActionsScreen',
+          error: 'Sending request to update status to: $statusString');
+
+      // Make API call
+      final url = '$API_BASE_URL/api/orphans/${_orphan.id}/updateStatus';
+      developer.log('Making API call to: $url', name: 'OrphanActionsScreen');
+
+      // Create a client with longer timeout
+      final client = http.Client();
+      try {
+        final response = await client.post(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': API_KEY,
+          },
+          body: jsonEncode({
+            'status': statusString,
+          }),
+        ).timeout(
+          const Duration(seconds: 30), // Increased timeout to 30 seconds
+          onTimeout: () {
+            client.close();
+            throw TimeoutException('The connection has timed out, please try again.');
+          },
         );
-        
-        // Navigate back to list
-        Navigator.pop(context, true);
+
+        developer.log('API Response',
+            name: 'OrphanActionsScreen',
+            error: 'Status Code: ${response.statusCode}, Body: ${response.body}');
+
+        if (response.statusCode == 200) {
+          // Update local state on success
+          setState(() {
+            _orphan = _orphan.copyWith(
+              status: newStatus,
+              updatedAt: DateTime.now(),
+              isSynced: true, // Mark as synced since API call succeeded
+            );
+            _isLoading = false;
+          });
+
+          // Show success message with checkmark icon
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text('Orphan status updated to "${_getStatusText(newStatus)}"'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        } else {
+          // Handle API error
+          developer.log('API Error',
+              name: 'OrphanActionsScreen',
+              error: 'Failed to update status: ${response.statusCode}');
+          throw Exception('Server error: ${response.statusCode}. Please try again.');
+        }
+      } finally {
+        client.close();
       }
     } catch (e) {
+      developer.log('Exception',
+          name: 'OrphanActionsScreen',
+          error: 'Error updating status: ${e.toString()}');
+
+      // Handle any errors
+      setState(() {
+        _isLoading = false;
+      });
+      
       if (mounted) {
+        String errorMessage;
+        if (e is SocketException) {
+          errorMessage = 'No internet connection. Please check your connection and try again.';
+        } else if (e is TimeoutException) {
+          errorMessage = 'Connection timed out. The server is taking too long to respond. Please try again.';
+        } else if (e.toString().contains('Failed host lookup')) {
+          errorMessage = 'Cannot connect to server. Please check your internet connection or the server might be down.';
+        } else {
+          errorMessage = 'Failed to update status: ${e.toString()}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update status'),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(errorMessage),
+                ),
+              ],
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () {
+                _updateOrphanStatus(newStatus);
+              },
+            ),
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
       }
     }
   }
@@ -476,10 +590,10 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
   void _navigateToEditForm() async {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => OrphanFormPage(orphan: widget.orphan),
+        builder: (context) => OrphanFormPage(orphan: _orphan),
       ),
     );
-    
+
     // If the form was saved successfully, navigate back to the list
     if (result != null && result is OrphanData) {
       if (mounted) {
@@ -489,7 +603,7 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // Navigate back to list with updated data
         Navigator.pop(context, true);
       }
@@ -498,7 +612,7 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
 
   Color _getStatusColor(OrphanStatus status) {
     switch (status) {
-      case OrphanStatus.good:
+      case OrphanStatus.active:
         return Colors.green;
       case OrphanStatus.missing:
         return Colors.red;
@@ -509,8 +623,8 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
 
   String _getStatusText(OrphanStatus status) {
     switch (status) {
-      case OrphanStatus.good:
-        return 'Good';
+      case OrphanStatus.active:
+        return 'Active';
       case OrphanStatus.missing:
         return 'Missing';
       case OrphanStatus.unknown:
@@ -520,11 +634,11 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
 
   String _getAgeAndGender() {
     final parts = <String>[];
-    
+
     // Calculate age from date of birth
-    if (widget.orphan.dateOfBirth != null && widget.orphan.dateOfBirth!.isNotEmpty) {
+    if (_orphan.dateOfBirth != null && _orphan.dateOfBirth!.isNotEmpty) {
       try {
-        final dateParts = widget.orphan.dateOfBirth!.split('/');
+        final dateParts = _orphan.dateOfBirth!.split('/');
         if (dateParts.length == 3) {
           final birthDate = DateTime(
             int.parse(dateParts[2]), // year
@@ -538,11 +652,11 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
         // If date parsing fails, don't show age
       }
     }
-    
-    if (widget.orphan.gender != null) {
-      parts.add(widget.orphan.gender!);
+
+    if (_orphan.gender != null) {
+      parts.add(_orphan.gender!);
     }
-    
+
     return parts.join(' • ');
   }
 }
