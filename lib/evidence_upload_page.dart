@@ -29,7 +29,7 @@ class _EvidenceUploadPageState extends State<EvidenceUploadPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Evidence'),
+        title: const Text('Upload Payment Evidence'),
       ),
       body: Center(
         child: Column(
@@ -72,6 +72,8 @@ class _EvidenceUploadPageState extends State<EvidenceUploadPage> {
               label: const Text('Upload Evidence'),
               onPressed: () {
                 // TODO: Implement upload logic
+                // Call API to upload the image
+                // Store image in DB if API call fails
               },
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(200, 50),

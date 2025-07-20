@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'orphan_form.dart';
-import 'evidence_upload_page.dart';
 import 'orphan_list_view.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -39,21 +38,6 @@ class DashboardPage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const OrphanListView()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(200, 50),
-              textStyle: const TextStyle(fontSize: 18),
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.cloud_upload),
-            label: const Text('Upload Evidence'),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const EvidenceUploadPage()),
               );
             },
             style: ElevatedButton.styleFrom(

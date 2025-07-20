@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models/orphan.dart';
 import 'orphan_form.dart';
+import 'evidence_upload_page.dart';
 
 class OrphanActionsScreen extends StatefulWidget {
   final OrphanData orphan;
@@ -220,10 +221,10 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
   Widget _buildPaymentActionCard() {
     return _buildActionCard(
       title: 'Confirm Payment Withdrawal',
-      subtitle: 'Process payment for this orphan',
+      subtitle: 'Upload evidence for payment withdrawal',
       icon: Icons.account_balance_wallet,
       iconColor: Colors.green,
-      onTap: () => _showPaymentConfirmationDialog(),
+      onTap: () => _navigateToEvidenceUpload(),
     );
   }
 
@@ -328,46 +329,27 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
     );
   }
 
-  void _showPaymentConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Payment Withdrawal'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Confirm payment withdrawal for ${widget.orphan.displayName}?'),
-            const SizedBox(height: 16),
-            const Text(
-              'This action will:',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            const Text('• Mark payment as withdrawn'),
-            const Text('• Update payment status'),
-            const Text('• Send confirmation to system'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _processPayment();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Confirm'),
-          ),
-        ],
+  void _navigateToEvidenceUpload() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const EvidenceUploadPage(),
       ),
     );
+    
+    // If evidence was uploaded successfully, navigate back to the list
+    if (result == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Evidence uploaded for ${widget.orphan.displayName}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Navigate back to list
+        Navigator.pop(context, true);
+      }
+    }
   }
 
   void _showStatusUpdateDialog() {
@@ -420,40 +402,6 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _processPayment() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      // TODO: Implement actual payment processing
-      await Future.delayed(const Duration(seconds: 2));
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Payment confirmed for ${widget.orphan.displayName}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Navigate back to list
-        Navigator.pop(context, true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to process payment'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
   }
 
   Future<void> _syncData() async {
