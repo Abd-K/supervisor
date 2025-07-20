@@ -428,30 +428,6 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
 
   Future<void> _updateOrphanStatus(OrphanStatus newStatus) async {
     try {
-      // Show loading overlay
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return WillPopScope(
-            onWillPop: () async => false,
-            child: const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Updating status...',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-
       setState(() {
         _isLoading = true;
       });
@@ -512,11 +488,6 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
             name: 'OrphanActionsScreen',
             error: 'Status Code: ${response.statusCode}, Body: ${response.body}');
 
-        // Pop loading dialog
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-
         if (response.statusCode == 200) {
           // Update local state on success
           setState(() {
@@ -558,11 +529,6 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
       developer.log('Exception',
           name: 'OrphanActionsScreen',
           error: 'Error updating status: ${e.toString()}');
-
-      // Pop loading dialog if still showing
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
 
       // Handle any errors
       setState(() {
