@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'models/orphan.dart';
 import 'orphan_form.dart';
 import 'orphan_actions_screen.dart';
+import 'dart:io';
 
 class OrphanListView extends StatefulWidget {
   const OrphanListView({super.key});
@@ -76,7 +77,7 @@ class _OrphanListViewState extends State<OrphanListView> {
         createdAt: DateTime.fromMillisecondsSinceEpoch(1753017890 * 1000), // last_updated
         updatedAt: DateTime.fromMillisecondsSinceEpoch(1753017890 * 1000), // last_updated
         isSynced: false,
-        // Additional fields from the JSON can be added to OrphanData if supported
+        profileImage: File('/storage/emulated/0/Download/noor.jpg'),
       ),
       OrphanData(
         id: '3',
@@ -725,15 +726,23 @@ class _OrphanListViewState extends State<OrphanListView> {
         ),
       ),
       child: ClipOval(
-        child: orphan.profileImage != null && orphan.profileImage!.existsSync()
-            ? Image.file(
-                orphan.profileImage!,
+        child: orphan.id == '60e4ca3d-f089-4fc1-bba8-4dc18c25cc6b'
+            ? Image.asset(
+                'assets/images/noor.jpg',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return _buildDefaultAvatar(orphan);
                 },
               )
-            : _buildDefaultAvatar(orphan),
+            : orphan.profileImage != null && orphan.profileImage!.existsSync()
+                ? Image.file(
+                    orphan.profileImage!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildDefaultAvatar(orphan);
+                    },
+                  )
+                : _buildDefaultAvatar(orphan),
       ),
     );
   }

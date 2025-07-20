@@ -103,8 +103,23 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                     ),
                   ),
                   child: ClipOval(
-                    child: _orphan.profileImage != null &&
-                            _orphan.profileImage!.existsSync()
+                    child: _orphan.id == '60e4ca3d-f089-4fc1-bba8-4dc18c25cc6b'
+                        ? Image.asset(
+                            'assets/images/noor.jpg',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[200],
+                                child: Icon(
+                                  _orphan.gender == 'Male' ? Icons.boy : Icons.girl,
+                                  size: 40,
+                                  color: Colors.grey[400],
+                                ),
+                              );
+                            },
+                          )
+                        : _orphan.profileImage != null && 
+                           _orphan.profileImage!.existsSync()
                         ? Image.file(
                             _orphan.profileImage!,
                             fit: BoxFit.cover,
