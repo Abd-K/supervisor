@@ -13,7 +13,7 @@ class OrphanFormPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(orphan == null ? 'New Orphan Form' : 'Edit Orphan Details'),
+        title: Text(orphan == null ? 'Orphan Registration Form' : 'Edit Orphan Details'),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
@@ -159,15 +159,6 @@ Widget build(BuildContext context) {
   return GestureDetector(
     onTap: () => FocusScope.of(context).unfocus(),
     child: Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Orphan Registration Form',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        elevation: 2,
-      ),
       resizeToAvoidBottomInset: true,
 
       body: Stack(
