@@ -1,3 +1,4 @@
+import 'database/database_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:supervisor/models/orphan.dart';
 import 'package:intl/intl.dart';
@@ -563,33 +564,64 @@ Widget build(BuildContext context) {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Bilal & Mustafa
-      // 1- Implement actual API call
-      // 2- Implement SQLite storage. SQLite should have a column isSynced to indicate if the data is synced with the server.
-      // On app startup, check if there are unsynced records and sync them with the server by calling an API endpoint.
+      // Save to local database
+      final dbHelper = DatabaseHelper();
 
-      // simulate save
-      await Future.delayed(const Duration(seconds: 3));
-
-      final updatedOrphan = Orphan(
-        id: widget.orphan?.id ?? DateTime.now().toIso8601String(),
+      // Create orphan object from form data
+      final orphan = Orphan(
+        id: widget.orphan?.id ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         firstName: _controllers['firstName']!.text,
         fatherName: _controllers['fatherName']!.text,
         familyName: _controllers['familyName']!.text,
-        nickName: _controllers['nickName']!.text,
-        dateOfBirth: DateFormat('dd/MM/yyyy').parse(_controllers['dateOfBirth']!.text),
-        placeOfBirth: _controllers['placeOfBirth']!.text,
-        nationalId: _controllers['nationalId']!.text,
-        gender: _dropdownValues['gender']!,
-        nationality: _controllers['nationality']!.text,
-        guardianFullName: widget.orphan!.guardianFullName,
-        guardianRelationship: widget.orphan!.guardianRelationship,
-        guardianEducation: widget.orphan!.guardianEducation,
-        guardianWork: widget.orphan!.guardianWork,
-        guardianDependents: widget.orphan!.guardianDependents,
-        guardianIncome: widget.orphan!.guardianIncome,
-        guardianSupport: widget.orphan!.guardianSupport,
+        nickName: _controllers['nickName']!.text.isEmpty
+            ? null
+            : _controllers['nickName']!.text,
+        dateOfBirth:
+            DateFormat('dd/MM/yyyy').parse(_controllers['dateOfBirth']!.text),
+        placeOfBirth: _controllers['placeOfBirth']!.text.isEmpty
+            ? null
+            : _controllers['placeOfBirth']!.text,
+        nationalId: _controllers['nationalId']!.text.isEmpty
+            ? null
+            : _controllers['nationalId']!.text,
+        gender: _dropdownValues['gender'] ?? 'Male',
+        nationality: _controllers['nationality']!.text.isEmpty
+            ? null
+            : _controllers['nationality']!.text,
+        guardianFullName: _controllers['guardianFullName']!.text,
+        guardianRelationship: _controllers['guardianRelationship']!.text,
+        guardianEducation: _controllers['guardianEducation']!.text,
+        guardianWork: _controllers['guardianWork']!.text,
+        guardianDependents:
+            int.tryParse(_controllers['guardianDependents']!.text) ?? 0,
+        guardianIncome:
+            double.tryParse(_controllers['guardianIncome']!.text) ?? 0.0,
+        guardianSupport:
+            double.tryParse(_controllers['guardianSupport']!.text) ?? 0.0,
+        institutionName: _controllers['institutionName']!.text.isEmpty
+            ? null
+            : _controllers['institutionName']!.text,
+        gradeLevel: _controllers['gradeLevel']!.text.isEmpty
+            ? null
+            : _controllers['gradeLevel']!.text,
+        academicPerformance: _controllers['academicPerformance']!.text.isEmpty
+            ? null
+            : _controllers['academicPerformance']!.text,
+        healthStatus: _dropdownValues['healthStatus'],
+        disabilityType: _controllers['disabilityType']!.text.isEmpty
+            ? null
+            : _controllers['disabilityType']!.text,
       );
+
+      // Save to database
+      if (widget.orphan != null) {
+        await dbHelper.updateOrphan(orphan);
+      } else {
+        await dbHelper.insertOrphan(orphan);
+      }
+
+      final updatedOrphan = orphan;
 
       if (!mounted) return;
 
