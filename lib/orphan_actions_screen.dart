@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'models/orphan.dart';
+import 'orphan_form.dart';
 
 class OrphanActionsScreen extends StatefulWidget {
   final OrphanData orphan;
@@ -523,14 +524,27 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
     }
   }
 
-  void _navigateToEditForm() {
-    // TODO: Navigate to edit form with orphan data
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Edit form will be implemented'),
-        backgroundColor: Colors.purple,
+  void _navigateToEditForm() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => OrphanFormPage(orphan: widget.orphan),
       ),
     );
+    
+    // If the form was saved successfully, navigate back to the list
+    if (result != null && result is OrphanData) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Orphan details updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Navigate back to list with updated data
+        Navigator.pop(context, true);
+      }
+    }
   }
 
   Color _getStatusColor(OrphanStatus status) {
