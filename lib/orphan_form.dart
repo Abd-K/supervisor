@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'models/orphan.dart';
 import 'package:intl/intl.dart';
 
@@ -334,7 +336,7 @@ Widget build(BuildContext context) {
     icon: Icons.school,
     children: [
       _buildDropdown('educationType', 'Type of Education', ['Academic', 'Vocational']),
-      _buildDropdown('educationStage', 'Educational Stage', ['Preschool', 'Primary', 'Middle', 'Secondary', 'University']),
+      _buildDropdown('educationStage', 'Educational Stage', ['Primary', 'Middle', 'Secondary', 'University']),
       _buildTextField('gradeLevel', 'Grade Level'),
       _buildTextField('academicYear', 'Academic Year'),
       _buildTextField('institutionName', 'Name of Educational Institution'),
@@ -356,7 +358,7 @@ Widget build(BuildContext context) {
     title: 'Health Status of the Child',
     icon: Icons.health_and_safety,
     children: [
-      _buildDropdown('healthStatus', 'General Health Status', ['Good', 'Chronic Illness', 'Special Needs']),
+      _buildDropdown('healthStatus', 'General Health Status', ['Good'/*, 'Chronic Illness', 'Special Needs'*/]),
       _buildTextField('disabilityType', 'Type of Disability (if any)', maxLines: 2),
     ],
   );
@@ -724,47 +726,120 @@ Widget build(BuildContext context) {
         id: widget.orphan?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       );
 
-      // TODO: Bilal & Mustafa
-      // 1- Implement actual API call with orphanData.toJson()
-      // 2- Implement SQLite storage. SQLite should have a column isSynced to indicate if the data is synced with the server.
-      // On app startup, check if there are unsynced records and sync them with the server by calling an API endpoint.
+      // Prepare API request body
+      final apiRequestBody = _buildApiRequestBody(orphanData);
       
-      // Example of how to use the data:
-      print('Orphan Name: ${orphanData.displayName}');
-      print('Orphan Data JSON: ${orphanData.toJson()}');
-
-      // simulate save
-      await Future.delayed(const Duration(seconds: 3));
+      // Debug: Print the request body
+      print('=== API REQUEST BODY ===');
+      print(jsonEncode(apiRequestBody));
+      print('=== END REQUEST BODY ===');
+      
+      // Make API call
+      final response = await http.post(
+        Uri.parse('https://f91934e7fe45.ngrok-free.app/api/orphans'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': 'orphan_hq_demo_2025',
+        },
+        body: jsonEncode(apiRequestBody),
+      );
 
       if (!mounted) return;
 
-      // stop loading and reset form in one setState
-      setState(() {
-        _isLoading = false;
-        if (widget.orphan == null) {
-          _resetForm();
+      if (response.statusCode == 200) {
+        // Success - stop loading and reset form in one setState
+        setState(() {
+          _isLoading = false;
+          if (widget.orphan == null) {
+            _resetForm();
+          }
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Child information ${widget.orphan == null ? 'saved' : 'updated'} successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        if (widget.orphan != null) {
+          Navigator.of(context).pop(orphanData);
         }
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Child information ${widget.orphan == null ? 'saved' : 'updated'} successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      if (widget.orphan != null) {
-        Navigator.of(context).pop(orphanData);
+      } else {
+        // API error
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save: ${response.statusCode} - ${response.body}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to save. Please try again.'),
+        SnackBar(
+          content: Text('Network error: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
+  }
+
+  Map<String, dynamic> _buildApiRequestBody(OrphanData orphanData) {
+    // Helper function to convert date format from dd/MM/yyyy to ISO string
+    String? convertDateToIso(String? dateStr) {
+      if (dateStr == null || dateStr.isEmpty) return null;
+      try {
+        final date = DateFormat('dd/MM/yyyy').parse(dateStr);
+        return date.toIso8601String();
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Helper function to convert gender to lowercase
+    String? convertGender(String? gender) {
+      if (gender == null) return null;
+      return gender.toLowerCase();
+    }
+
+    return {
+      "first_name": orphanData.firstName ?? "",
+      "father_name": orphanData.fatherName ?? "",
+      "grandfather_name": orphanData.fatherFatherName ?? "",
+      "family_name": orphanData.familyName ?? "",
+      "date_of_birth": convertDateToIso(orphanData.dateOfBirth),
+      "gender": convertGender(orphanData.gender),
+      "status": "active",
+      "father": {
+        "name": "${orphanData.fatherFirstName ?? ""} ${orphanData.fatherFatherName ?? ""} ${orphanData.fatherFamilyName ?? ""}".trim(),
+        "date_of_death": convertDateToIso(orphanData.fatherDateOfDeath),
+        "cause_of_death": orphanData.fatherCauseOfDeath ?? "",
+        "occupation": orphanData.fatherWork ?? ""
+      },
+      "mother": {
+        "name": orphanData.motherFullName ?? "",
+        "alive": orphanData.motherAlive?.toLowerCase() == 'yes',
+        "occupation": orphanData.motherWork ?? ""
+      },
+      "education": {
+        "level": orphanData.educationStage?.toLowerCase() ?? "primary",
+        "school_name": orphanData.institutionName ?? "",
+        "grade": orphanData.gradeLevel ?? ""
+      },
+      "health": {
+        "status": orphanData.healthStatus?.toLowerCase() ?? "good",
+        "medical_conditions": orphanData.disabilityType ?? "None",
+        "needs_medical_support": orphanData.healthStatus?.toLowerCase() != 'good'
+      },
+      "personal": {
+        "hobbies": "Reading, Playing",
+        "skills": "General learning abilities",
+        "number_of_siblings": orphanData.fatherWivesChildren ?? 0,
+        "siblings_details": "Details not specified"
+      }
+    };
   }
 }
