@@ -416,13 +416,7 @@ Widget build(BuildContext context) {
         builder: (context) => Focus(
           onFocusChange: (hasFocus) {
             if (hasFocus) {
-              Future.delayed(const Duration(milliseconds: 300), () {
-                Scrollable.ensureVisible(
-                  context,
-                  duration: const Duration(milliseconds: 300),
-                  alignment: 0.1, // Ensure proper scrolling
-                );
-              });
+              _scrollToField(key);
             }
           },
           child: TextFormField(
@@ -841,5 +835,14 @@ Widget build(BuildContext context) {
         "siblings_details": "Details not specified"
       }
     };
+  }
+
+  void _scrollToField(String fieldKey) {
+    final context = _controllers[fieldKey]?.text ?? '';
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 }

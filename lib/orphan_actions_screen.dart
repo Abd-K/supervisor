@@ -359,19 +359,18 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
       _isLoading = true;
     });
 
-    // Simulate network call
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        _isLoading = false;
-        // _orphan = _orphan.copyWith(isSynced: true);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Data synced successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+    // TODO: Make actual API call here
+    setState(() {
+      _isLoading = false;
+      // _orphan = _orphan.copyWith(isSynced: true);
     });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Data synced successfully!'),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   void _showUpdateStatusDialog() {

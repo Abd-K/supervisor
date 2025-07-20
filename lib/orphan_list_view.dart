@@ -269,7 +269,6 @@ class _OrphanListViewState extends State<OrphanListView> {
                 : RefreshIndicator(
                     onRefresh: () async {
                       // TODO: Implement refresh from database/API
-                      await Future.delayed(const Duration(seconds: 1));
                       setState(() {
                         _loadDummyData();
                       });
