@@ -23,7 +23,7 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.orphan.displayName,
+          widget.orphan.displayName, 
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.green,
@@ -443,6 +443,7 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
     
     try {
       // TODO: Implement actual status update
+      // TODO: Mustafa and Bilal update data base and call API
       await Future.delayed(const Duration(seconds: 1));
       
       if (mounted) {
