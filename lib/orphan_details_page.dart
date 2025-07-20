@@ -61,21 +61,16 @@ class _OrphanDetailsPageState extends State<OrphanDetailsPage> {
             icon: const Icon(Icons.edit),
             tooltip: 'Edit Details',
             onPressed: () async {
-              final updatedOrphanData = await Navigator.push<OrphanData>(
+              final updatedOrphan = await Navigator.push<Orphan>(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => OrphanFormPage(orphan: _orphan.toOrphanData()),
+                  builder: (context) => OrphanFormPage(orphan: _orphan),
                 ),
               );
-              if (updatedOrphanData != null) {
-                // Note: In a real app, you'd want to update the original orphan data
-                // For now, we'll just show a success message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Orphan details updated successfully'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+              if (updatedOrphan != null) {
+                setState(() {
+                  _orphan = updatedOrphan;
+                });
               }
             },
           ),

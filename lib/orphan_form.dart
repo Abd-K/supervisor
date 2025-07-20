@@ -1,11 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'models/orphan.dart';
+import 'package:supervisor/models/orphan.dart';
 import 'package:intl/intl.dart';
+import 'services/api_service.dart'; // Added import for ApiService
+import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:developer' as developer;
 
 class OrphanFormPage extends StatelessWidget {
-  final OrphanData? orphan;
+  final Orphan? orphan;
 
   const OrphanFormPage({super.key, this.orphan});
 
@@ -32,7 +36,7 @@ class OrphanFormPage extends StatelessWidget {
 }
 
 class OrphanForm extends StatefulWidget {
-  final OrphanData? orphan;
+  final Orphan? orphan;
   const OrphanForm({super.key, this.orphan});
 
   @override
@@ -57,6 +61,7 @@ class _OrphanFormState extends State<OrphanForm> {
     'psychological': false,
     'behavioral': false,
     'housing': false,
+    'personal': false,
   };
 
   // Dropdown selections
@@ -74,16 +79,54 @@ class _OrphanFormState extends State<OrphanForm> {
     _initializeControllers();
     if (widget.orphan != null) {
       _prefillForm(widget.orphan!);
+    } else {
+      if (kDebugMode) {
+        _prefillWithSampleData();
+      }
     }
   }
 
-  void _prefillForm(OrphanData orphan) {
+  void _prefillWithSampleData() {
+    _controllers['firstName']!.text = 'Ahmed';
+    _controllers['fatherName']!.text = 'Mohammed';
+    _controllers['grandfatherName']!.text = 'Ali';
+    _controllers['familyName']!.text = 'Hassan';
+    _controllers['dateOfBirth']!.text = '15/03/2015';
+    
+    _controllers['fatherDateOfDeath']!.text = '20/06/2023';
+    _controllers['fatherCauseOfDeath']!.text = 'Heart attack';
+    _controllers['fatherWork']!.text = 'Teacher';
+    
+    _controllers['motherFullName']!.text = 'Fatima Hassan';
+    _controllers['motherWork']!.text = 'Housewife';
+    
+    _controllers['institutionName']!.text = 'Al-Noor Primary School';
+    _controllers['gradeLevel']!.text = '3rd Grade';
+    
+    _controllers['disabilityType']!.text = 'None';
+
+    _controllers['hobbies']!.text = 'Reading, Football';
+    _controllers['skills']!.text = 'Good at mathematics';
+    _controllers['numberOfSiblings']!.text = '2';
+    _controllers['siblingsDetails']!.text = 'Older sister Sara (12), Younger brother Omar (5)';
+    
+    setState(() {
+      _dropdownValues['gender'] = 'Male';
+      _dropdownValues['fatherAlive'] = 'No';
+      _dropdownValues['motherAlive'] = 'Yes';
+      _dropdownValues['educationStage'] = 'Primary';
+      _dropdownValues['healthStatus'] = 'Good';
+    });
+  }
+
+  void _prefillForm(Orphan orphan) {
     // Pre-fill text fields
-    _controllers['firstName']?.text = orphan.firstName ?? '';
-    _controllers['fatherName']?.text = orphan.fatherName ?? '';
-    _controllers['familyName']?.text = orphan.familyName ?? '';
+    _controllers['firstName']?.text = orphan.firstName;
+    _controllers['fatherName']?.text = orphan.fatherName;
+    _controllers['grandfatherName']?.text = orphan.grandfatherName ?? '';
+    _controllers['familyName']?.text = orphan.familyName;
     _controllers['nickName']?.text = orphan.nickName ?? '';
-    _controllers['dateOfBirth']?.text = orphan.dateOfBirth ?? '';
+    _controllers['dateOfBirth']?.text = DateFormat('dd/MM/yyyy').format(orphan.dateOfBirth);
     _controllers['placeOfBirth']?.text = orphan.placeOfBirth ?? '';
     _controllers['nationalId']?.text = orphan.nationalId ?? '';
     _controllers['nationality']?.text = orphan.nationality ?? '';
@@ -97,8 +140,10 @@ class _OrphanFormState extends State<OrphanForm> {
     _controllers['mailingAddress']?.text = orphan.mailingAddress ?? '';
     _controllers['phoneNumber']?.text = orphan.phoneNumber ?? '';
 
-    // Pre-fill orphan profile image
-    _profileImage = orphan.profileImage;
+    _controllers['hobbies']?.text = orphan.hobbies ?? '';
+    _controllers['skills']?.text = orphan.skills ?? '';
+    _controllers['numberOfSiblings']?.text = orphan.numberOfSiblings?.toString() ?? '';
+    _controllers['siblingsDetails']?.text = orphan.siblingsDetails ?? '';
 
     // Pre-fill dropdowns
     setState(() {
@@ -114,7 +159,7 @@ class _OrphanFormState extends State<OrphanForm> {
   void _initializeControllers() {
     final fields = [
       // Child Info
-      'firstName', 'fatherName', 'familyName', 'nickName', 'dateOfBirth',
+      'firstName', 'fatherName', 'grandfatherName', 'familyName', 'nickName', 'dateOfBirth',
       'placeOfBirth', 'nationalId', 'nationality',
       // Address
       'country', 'province', 'city', 'village', 'camp', 'neighborhood',
@@ -139,6 +184,8 @@ class _OrphanFormState extends State<OrphanForm> {
       'malnutritionCauses',
       // Housing
       'housingDescription',
+      // Personal
+      'hobbies', 'skills', 'numberOfSiblings', 'siblingsDetails',
     ];
     for (var field in fields) {
       _controllers[field] = TextEditingController();
@@ -181,6 +228,7 @@ Widget build(BuildContext context) {
                   _buildPsychologicalSection(),
                   _buildBehavioralSection(),
                   _buildHousingSection(),
+                  _buildPersonalSection(),
                   const SizedBox(height: 24),
                   _buildSaveButton(),
                 ],
@@ -250,6 +298,7 @@ Widget build(BuildContext context) {
       _buildImagePicker(),
       _buildTextField('firstName', 'First Name', required: true),
       _buildTextField('fatherName', "Father's Name", required: true),
+      _buildTextField('grandfatherName', "Grandfather's Name", required: true),
       _buildTextField('familyName', 'Family Name', required: true),
       _buildTextField('nickName', 'Nick Name'),
       _buildDatePicker('dateOfBirth', 'Date of Birth', required: true),
@@ -398,6 +447,18 @@ Widget build(BuildContext context) {
       _buildTextField('housingDescription', 'Housing Type (e.g. apartment, tent, etc.)'),
       _buildDropdown('housingCondition', 'Housing Condition', ['Good', 'Moderate', 'Poor']),
       _buildDropdown('furnitureCondition', 'Furniture Condition', ['Good', 'Moderate', 'Poor']),
+    ],
+  );
+
+  Widget _buildPersonalSection() => _buildExpandableSection(
+    key: 'personal',
+    title: 'Personal Information',
+    icon: Icons.person,
+    children: [
+      _buildTextField('hobbies', 'Hobbies'),
+      _buildTextField('skills', 'Skills'),
+      _buildNumberField('numberOfSiblings', 'Number of Siblings'),
+      _buildTextField('siblingsDetails', 'Siblings Details', maxLines: 3),
     ],
   );
 
@@ -698,73 +759,94 @@ Widget build(BuildContext context) {
 }
 
   Future<void> _saveForm() async {
-    // Dismiss the keyboard
-    FocusScope.of(context).unfocus();
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      setState(() => _isLoading = true);
 
-    // if (_formKey.currentState?.validate() != true) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(content: Text('Please fill in all required fields')),
-    //   );
-    //   return;
-    // }
-
-    setState(() => _isLoading = true);
-
-    try {
-      // Create OrphanData object from form data
-      final textValues = <String, String>{};
-      for (final entry in _controllers.entries) {
-        textValues[entry.key] = entry.value.text;
-      }
-
-      final orphanData = OrphanData.fromForm(
-        textValues: textValues,
-        dropdownValues: _dropdownValues,
-        profileImage: _profileImage,
-        id: widget.orphan?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      );
-
-      // TODO: Bilal & Mustafa
-      // 1- Implement actual API call with orphanData.toJson()
-      // 2- Implement SQLite storage. SQLite should have a column isSynced to indicate if the data is synced with the server.
-      // On app startup, check if there are unsynced records and sync them with the server by calling an API endpoint.
-      
-      // Example of how to use the data:
-      print('Orphan Name: ${orphanData.displayName}');
-      print('Orphan Data JSON: ${orphanData.toJson()}');
-
-      // simulate save
-      await Future.delayed(const Duration(seconds: 3));
-
-      if (!mounted) return;
-
-      // stop loading and reset form in one setState
-      setState(() {
-        _isLoading = false;
-        if (widget.orphan == null) {
-          _resetForm();
+      // --- Data Transformation ---
+      DateTime? dateOfBirth = _controllers['dateOfBirth']!.text.isNotEmpty
+          ? DateFormat('dd/MM/yyyy').parse(_controllers['dateOfBirth']!.text)
+          : null;
+      DateTime? fatherDateOfDeath = _controllers['fatherDateOfDeath']!.text.isNotEmpty
+          ? DateFormat('dd/MM/yyyy').parse(_controllers['fatherDateOfDeath']!.text)
+          : null;
+          
+      final orphanData = {
+        "first_name": _controllers['firstName']!.text,
+        "father_name": _controllers['fatherName']!.text,
+        "grandfather_name": _controllers['grandfatherName']!.text,
+        "family_name": _controllers['familyName']!.text,
+        "date_of_birth": dateOfBirth?.toIso8601String(),
+        "gender": _dropdownValues['gender']?.toLowerCase(),
+        "status": "active",
+        "father": {
+          "name": _controllers['fatherName']!.text,
+          "date_of_death": fatherDateOfDeath?.toIso8601String(),
+          "cause_of_death": _controllers['fatherCauseOfDeath']!.text,
+          "occupation": _controllers['fatherWork']!.text,
+        },
+        "mother": {
+            "name": _controllers['motherFullName']!.text,
+            "alive": _dropdownValues['motherAlive'] == 'Yes',
+            "occupation": _controllers['motherWork']!.text,
+        },
+        "education": {
+            "level": _dropdownValues['educationStage'],
+            "school_name": _controllers['institutionName']!.text,
+            "grade": _controllers['gradeLevel']!.text,
+        },
+        "health": {
+            "status": _dropdownValues['healthStatus'],
+            "medical_conditions": _controllers['disabilityType']!.text,
+            "needs_medical_support": false, 
+        },
+        "personal": {
+            "hobbies": _controllers['hobbies']!.text,
+            "skills": _controllers['skills']!.text,
+            "number_of_siblings": int.tryParse(_controllers['numberOfSiblings']!.text),
+            "siblings_details": _controllers['siblingsDetails']!.text,
         }
-      });
+      };
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Child information ${widget.orphan == null ? 'saved' : 'updated'} successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // --- API Call with Logging ---
+      final apiService = ApiService();
+      try {
+        developer.log('Sending orphan data to API: ${jsonEncode(orphanData)}', name: 'ApiService');
+        final response = await apiService.createOrphan(orphanData);
 
-      if (widget.orphan != null) {
-        Navigator.of(context).pop(orphanData);
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          developer.log('Orphan saved successfully!', name: 'ApiService');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Orphan saved successfully!')),
+            );
+            Navigator.of(context).pop();
+          }
+        } else {
+          developer.log('Error saving orphan: ${response.statusCode} ${response.body}', name: 'ApiService');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error: ${response.statusCode} - ${response.body}')),
+            );
+          }
+        }
+      } catch (e, s) {
+        developer.log('Error saving orphan', name: 'ApiService', error: e, stackTrace: s);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('An unexpected error occurred: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to save. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
+
+  void _scrollToFirstError(FormState formState) {
+    // ... existing code ...
+
+}
 }

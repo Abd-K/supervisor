@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'models/orphan.dart';
-import 'orphan_form.dart';
-import 'evidence_upload_page.dart';
+import 'package:supervisor/models/orphan.dart';
+import 'package:supervisor/orphan_form.dart';
+import 'package:supervisor/evidence_upload_page.dart';
 
 class OrphanActionsScreen extends StatefulWidget {
-  final OrphanData orphan;
+  final Orphan orphan;
 
   const OrphanActionsScreen({
     super.key,
@@ -23,7 +23,7 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.orphan.displayName, 
+          '${widget.orphan.firstName} ${widget.orphan.familyName}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.green,
@@ -51,8 +51,6 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
             const SizedBox(height: 16),
             
             // Action cards
-            if (widget.orphan.hasPaymentAvailable) _buildPaymentActionCard(),
-            if (!widget.orphan.isSynced) _buildSyncActionCard(),
             _buildUpdateStatusActionCard(),
             _buildUpdateDetailsActionCard(),
             
@@ -82,25 +80,19 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: _getStatusColor(widget.orphan.status),
+                      color: Colors.green, // Replace with dynamic status color if available
                       width: 3,
                     ),
                   ),
                   child: ClipOval(
-                    child: widget.orphan.profileImage != null && 
-                           widget.orphan.profileImage!.existsSync()
-                        ? Image.file(
-                            widget.orphan.profileImage!,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            color: Colors.grey[200],
-                            child: Icon(
-                              widget.orphan.gender == 'Male' ? Icons.boy : Icons.girl,
-                              size: 40,
-                              color: Colors.grey[400],
-                            ),
-                          ),
+                    child: Container(
+                      color: Colors.grey[200],
+                      child: Icon(
+                        widget.orphan.gender == 'Male' ? Icons.boy : Icons.girl,
+                        size: 40,
+                        color: Colors.grey[400],
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -111,7 +103,7 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.orphan.displayName,
+                        '${widget.orphan.firstName} ${widget.orphan.familyName}',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -134,11 +126,11 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: _getStatusColor(widget.orphan.status),
+                          color: Colors.green, // Replace with dynamic status color if available
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          _getStatusText(widget.orphan.status),
+                          widget.orphan.healthStatus ?? 'Unknown',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -151,90 +143,9 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
                 ),
               ],
             ),
-            
-            const SizedBox(height: 16),
-            
-            // Status indicators
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildStatusIndicator(
-                  icon: Icons.account_balance_wallet,
-                  label: 'Payment',
-                  isActive: widget.orphan.hasPaymentAvailable,
-                  color: Colors.green,
-                ),
-                _buildStatusIndicator(
-                  icon: Icons.notification_important,
-                  label: 'Pending',
-                  isActive: widget.orphan.hasPendingActions,
-                  color: Colors.orange,
-                ),
-                _buildStatusIndicator(
-                  icon: Icons.sync,
-                  label: 'Synced',
-                  isActive: widget.orphan.isSynced,
-                  color: Colors.blue,
-                ),
-              ],
-            ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildStatusIndicator({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isActive ? color.withOpacity(0.2) : Colors.grey[200],
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: isActive ? color : Colors.grey,
-            size: 20,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: isActive ? color : Colors.grey,
-            fontWeight: isActive ? FontWeight.w500 : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPaymentActionCard() {
-    return _buildActionCard(
-      title: 'Confirm Payment Withdrawal',
-      subtitle: 'Upload evidence for payment withdrawal',
-      icon: Icons.account_balance_wallet,
-      iconColor: Colors.green,
-      onTap: () => _navigateToEvidenceUpload(),
-    );
-  }
-
-  Widget _buildSyncActionCard() {
-    return _buildActionCard(
-      title: 'Sync Data',
-      subtitle: 'Upload local changes to server',
-      icon: Icons.sync,
-      iconColor: Colors.blue,
-      onTap: () => _syncData(),
     );
   }
 
@@ -251,10 +162,21 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
   Widget _buildUpdateDetailsActionCard() {
     return _buildActionCard(
       title: 'Update Details',
-      subtitle: 'Edit orphan information and records',
+      subtitle: 'Edit orphan information',
       icon: Icons.edit,
-      iconColor: Colors.purple,
-      onTap: () => _navigateToEditForm(),
+      iconColor: Colors.blue,
+      onTap: () async {
+        final result = await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => OrphanFormPage(orphan: widget.orphan),
+          ),
+        );
+        if (result == true) {
+          // You might want to refresh the data here.
+          // For now, we'll just pop the screen.
+          Navigator.of(context).pop(true);
+        }
+      },
     );
   }
 
@@ -265,284 +187,100 @@ class _OrphanActionsScreenState extends State<OrphanActionsScreen> {
     required Color iconColor,
     required VoidCallback onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: _isLoading ? null : onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: iconColor,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Colors.grey[400],
-                ),
-              ],
-            ),
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            shape: BoxShape.circle,
           ),
+          child: Icon(icon, color: iconColor),
         ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+        onTap: onTap,
       ),
     );
   }
 
-  void _navigateToEvidenceUpload() async {
-    final result = await Navigator.of(context).push(
+  void _navigateToEvidenceUpload() {
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const EvidenceUploadPage(),
       ),
     );
-    
-    // If evidence was uploaded successfully, navigate back to the list
-    if (result == true) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Evidence uploaded for ${widget.orphan.displayName}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Navigate back to list
-        Navigator.pop(context, true);
-      }
-    }
+  }
+
+  void _syncData() {
+    setState(() => _isLoading = true);
+    // TODO: Implement actual data sync logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Syncing data...')),
+    );
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data synced successfully!')),
+      );
+    });
   }
 
   void _showStatusUpdateDialog() {
-    OrphanStatus? selectedStatus = widget.orphan.status;
-    
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+      builder: (context) {
+        String? selectedStatus = widget.orphan.healthStatus;
+        return AlertDialog(
           title: const Text('Update Status'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Update status for ${widget.orphan.displayName}:'),
-              const SizedBox(height: 16),
-              ...OrphanStatus.values.map(
-                (status) => RadioListTile<OrphanStatus>(
-                  title: Text(_getStatusText(status)),
-                  value: status,
-                  groupValue: selectedStatus,
-                  activeColor: Colors.green,
-                  onChanged: (value) {
-                    setDialogState(() {
-                      selectedStatus = value;
-                    });
-                  },
-                ),
-              ),
-            ],
+          content: StatefulBuilder(
+            builder: (context, setDialogState) {
+              return DropdownButton<String>(
+                value: selectedStatus,
+                isExpanded: true,
+                items: ['Good', 'Missing', 'Unknown'].map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setDialogState(() {
+                    selectedStatus = newValue;
+                  });
+                },
+              );
+            },
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
-              onPressed: selectedStatus != widget.orphan.status
-                  ? () {
-                      Navigator.pop(context);
-                      _updateStatus(selectedStatus!);
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
+            TextButton(
+              onPressed: () {
+                // TODO: Implement status update logic
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Status updated to $selectedStatus')),
+                );
+              },
               child: const Text('Update'),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
-  }
-
-  Future<void> _syncData() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      // TODO: Implement actual data sync
-      await Future.delayed(const Duration(seconds: 2));
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Data synced for ${widget.orphan.displayName}'),
-            backgroundColor: Colors.blue,
-          ),
-        );
-        
-        // Navigate back to list
-        Navigator.pop(context, true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to sync data'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _updateStatus(OrphanStatus newStatus) async {
-    setState(() => _isLoading = true);
-    
-    try {
-      // TODO: Implement actual status update
-      // TODO: Mustafa and Bilal update data base and call API
-      await Future.delayed(const Duration(seconds: 1));
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Status updated for ${widget.orphan.displayName}'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        
-        // Navigate back to list
-        Navigator.pop(context, true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to update status'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _navigateToEditForm() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => OrphanFormPage(orphan: widget.orphan),
-      ),
-    );
-    
-    // If the form was saved successfully, navigate back to the list
-    if (result != null && result is OrphanData) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Orphan details updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Navigate back to list with updated data
-        Navigator.pop(context, true);
-      }
-    }
-  }
-
-  Color _getStatusColor(OrphanStatus status) {
-    switch (status) {
-      case OrphanStatus.good:
-        return Colors.green;
-      case OrphanStatus.missing:
-        return Colors.red;
-      case OrphanStatus.unknown:
-        return Colors.orange;
-    }
-  }
-
-  String _getStatusText(OrphanStatus status) {
-    switch (status) {
-      case OrphanStatus.good:
-        return 'Good';
-      case OrphanStatus.missing:
-        return 'Missing';
-      case OrphanStatus.unknown:
-        return 'Unknown';
-    }
   }
 
   String _getAgeAndGender() {
-    final parts = <String>[];
-    
-    // Calculate age from date of birth
-    if (widget.orphan.dateOfBirth != null && widget.orphan.dateOfBirth!.isNotEmpty) {
-      try {
-        final dateParts = widget.orphan.dateOfBirth!.split('/');
-        if (dateParts.length == 3) {
-          final birthDate = DateTime(
-            int.parse(dateParts[2]), // year
-            int.parse(dateParts[1]), // month
-            int.parse(dateParts[0]), // day
-          );
-          final age = DateTime.now().difference(birthDate).inDays ~/ 365;
-          parts.add('$age years old');
-        }
-      } catch (e) {
-        // If date parsing fails, don't show age
-      }
-    }
-    
-    if (widget.orphan.gender != null) {
-      parts.add(widget.orphan.gender!);
-    }
-    
-    return parts.join(' • ');
+    final age = DateTime.now().difference(widget.orphan.dateOfBirth).inDays ~/ 365;
+    return 'Age: $age, Gender: ${widget.orphan.gender}';
   }
 }
