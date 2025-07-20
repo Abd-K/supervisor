@@ -38,28 +38,50 @@ class SupervisorHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Orphan Supervisor Dashboard'),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Orphan Supervisor'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(
+                icon: Icon(Icons.dashboard),
+                text: 'Dashboard',
+              ),
+              Tab(
+                icon: Icon(Icons.list),
+                text: 'List',
+              ),
+              Tab(
+                icon: Icon(Icons.assignment),
+                text: 'Orphan Form',
+              ),
+            ],
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: Colors.white,
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            DashboardTab(),
+            ListTab(),
+            FormTab(),
+          ],
+        ),
       ),
-      body: const DashboardPage(),
     );
   }
 }
 
-// Placeholder widgets for each tab
+// Tab widgets for TabBarView
 class DashboardTab extends StatelessWidget {
   const DashboardTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Dashboard Tab\nContent will be built here',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 18),
-      ),
-    );
+    return const DashboardPage();
   }
 }
 
@@ -77,6 +99,6 @@ class FormTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const OrphanForm();
+    return const OrphanFormPage();
   }
 }
