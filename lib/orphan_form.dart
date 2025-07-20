@@ -1,7 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:supervisor/models/orphan.dart';
+import 'package:intl/intl.dart';
+
+class OrphanFormPage extends StatelessWidget {
+  final Orphan? orphan;
+
+  const OrphanFormPage({super.key, this.orphan});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(orphan == null ? 'New Orphan Form' : 'Edit Orphan Details'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: () {
+              // The save logic is handled by the form itself.
+              // We can use a GlobalKey to call the form's save method.
+              // This is a common pattern for forms.
+              // For now, we will rely on the button inside the form.
+            },
+          ),
+        ],
+      ),
+      body: OrphanForm(orphan: orphan),
+    );
+  }
+}
 
 class OrphanForm extends StatefulWidget {
-  const OrphanForm({super.key});
+  final Orphan? orphan;
+  const OrphanForm({super.key, this.orphan});
 
   @override
   State<OrphanForm> createState() => _OrphanFormState();
@@ -36,6 +66,40 @@ class _OrphanFormState extends State<OrphanForm> {
   void initState() {
     super.initState();
     _initializeControllers();
+    if (widget.orphan != null) {
+      _prefillForm(widget.orphan!);
+    }
+  }
+
+  void _prefillForm(Orphan orphan) {
+    // Pre-fill text fields
+    _controllers['firstName']?.text = orphan.firstName;
+    _controllers['fatherName']?.text = orphan.fatherName;
+    _controllers['familyName']?.text = orphan.familyName;
+    _controllers['nickName']?.text = orphan.nickName ?? '';
+    _controllers['dateOfBirth']?.text = DateFormat('dd/MM/yyyy').format(orphan.dateOfBirth);
+    _controllers['placeOfBirth']?.text = orphan.placeOfBirth ?? '';
+    _controllers['nationalId']?.text = orphan.nationalId ?? '';
+    _controllers['nationality']?.text = orphan.nationality ?? '';
+    _controllers['country']?.text = orphan.country ?? '';
+    _controllers['province']?.text = orphan.province ?? '';
+    _controllers['city']?.text = orphan.city ?? '';
+    _controllers['village']?.text = orphan.village ?? '';
+    _controllers['camp']?.text = orphan.camp ?? '';
+    _controllers['neighborhood']?.text = orphan.neighborhood ?? '';
+    _controllers['street']?.text = orphan.street ?? '';
+    _controllers['mailingAddress']?.text = orphan.mailingAddress ?? '';
+    _controllers['phoneNumber']?.text = orphan.phoneNumber ?? '';
+
+    // Pre-fill dropdowns
+    setState(() {
+      _dropdownValues['gender'] = orphan.gender;
+      _dropdownValues['healthStatus'] = orphan.healthStatus;
+      _dropdownValues['psychologicalStatus'] = orphan.psychologicalStatus;
+      _dropdownValues['behavioralStatus'] = orphan.behavioralStatus;
+      _dropdownValues['housingType'] = orphan.housingType;
+      // Add other dropdowns as needed
+    });
   }
 
   void _initializeControllers() {
@@ -413,7 +477,7 @@ Widget build(BuildContext context) {
           );
           if (date != null) {
             setState(() {
-              _controllers[key]!.text = '${date.day}/${date.month}/${date.year}';
+              _controllers[key]!.text = DateFormat('dd/MM/yyyy').format(date);
             });
           }
         },
@@ -425,38 +489,36 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildSaveButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _saveForm,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-        ),
-        child: _isLoading
-            ? const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    'Saving...',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              )
-            : const Text(
-                'Save Child Information',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _saveForm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
               ),
+              child: _isLoading
+                  ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
+                  : const Text('Save'),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+              ),
+              child: const Text('Cancel'),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -490,7 +552,7 @@ Widget build(BuildContext context) {
   Future<void> _saveForm() async {
     // Dismiss the keyboard
     FocusScope.of(context).unfocus();
-    
+
     // if (_formKey.currentState?.validate() != true) {
     //   ScaffoldMessenger.of(context).showSnackBar(
     //     const SnackBar(content: Text('Please fill in all required fields')),
@@ -508,20 +570,47 @@ Widget build(BuildContext context) {
 
       // simulate save
       await Future.delayed(const Duration(seconds: 3));
+
+      final updatedOrphan = Orphan(
+        id: widget.orphan?.id ?? DateTime.now().toIso8601String(),
+        firstName: _controllers['firstName']!.text,
+        fatherName: _controllers['fatherName']!.text,
+        familyName: _controllers['familyName']!.text,
+        nickName: _controllers['nickName']!.text,
+        dateOfBirth: DateFormat('dd/MM/yyyy').parse(_controllers['dateOfBirth']!.text),
+        placeOfBirth: _controllers['placeOfBirth']!.text,
+        nationalId: _controllers['nationalId']!.text,
+        gender: _dropdownValues['gender']!,
+        nationality: _controllers['nationality']!.text,
+        guardianFullName: widget.orphan!.guardianFullName,
+        guardianRelationship: widget.orphan!.guardianRelationship,
+        guardianEducation: widget.orphan!.guardianEducation,
+        guardianWork: widget.orphan!.guardianWork,
+        guardianDependents: widget.orphan!.guardianDependents,
+        guardianIncome: widget.orphan!.guardianIncome,
+        guardianSupport: widget.orphan!.guardianSupport,
+      );
+
       if (!mounted) return;
 
       // stop loading and reset form in one setState
       setState(() {
         _isLoading = false;
-        _resetForm();
+        if (widget.orphan == null) {
+          _resetForm();
+        }
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Child information saved successfully!'),
+        SnackBar(
+          content: Text('Child information ${widget.orphan == null ? 'saved' : 'updated'} successfully!'),
           backgroundColor: Colors.green,
         ),
       );
+
+      if (widget.orphan != null) {
+        Navigator.of(context).pop(updatedOrphan);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
