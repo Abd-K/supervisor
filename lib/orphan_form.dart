@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'models/orphan.dart';
 
 class OrphanForm extends StatefulWidget {
   const OrphanForm({super.key});
@@ -29,6 +32,10 @@ class _OrphanFormState extends State<OrphanForm> {
 
   // Dropdown selections
   final Map<String, String?> _dropdownValues = {};
+
+  // Image picker
+  final ImagePicker _picker = ImagePicker();
+  File? _profileImage;
 
   bool _isLoading = false;
 
@@ -86,6 +93,15 @@ Widget build(BuildContext context) {
   return GestureDetector(
     onTap: () => FocusScope.of(context).unfocus(),
     child: Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Orphan Registration Form',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        elevation: 2,
+      ),
       resizeToAvoidBottomInset: true,
 
       body: Stack(
@@ -174,6 +190,7 @@ Widget build(BuildContext context) {
     title: 'Child Information',
     icon: Icons.child_care,
     children: [
+      _buildImagePicker(),
       _buildTextField('firstName', 'First Name', required: true),
       _buildTextField('fatherName', "Father's Name", required: true),
       _buildTextField('familyName', 'Family Name', required: true),
@@ -424,6 +441,144 @@ Widget build(BuildContext context) {
     );
   }
 
+  Widget _buildImagePicker() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Profile Picture',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _showImageSourceDialog,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(60),
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  width: 2,
+                ),
+              ),
+              child: _profileImage != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(58),
+                      child: Image.file(
+                        _profileImage!,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.add_photo_alternate,
+                      size: 40,
+                      color: Colors.grey,
+                    ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (_profileImage != null)
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _profileImage = null;
+                });
+              },
+              icon: const Icon(Icons.delete, color: Colors.red),
+              label: const Text(
+                'Remove Photo',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showImageSourceDialog() async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12, bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Text(
+              'Select Photo Source',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.blue),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.green),
+              title: const Text('Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 80,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _profileImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
@@ -501,10 +656,27 @@ Widget build(BuildContext context) {
     setState(() => _isLoading = true);
 
     try {
+      // Create OrphanData object from form data
+      final textValues = <String, String>{};
+      for (final entry in _controllers.entries) {
+        textValues[entry.key] = entry.value.text;
+      }
+
+      final orphanData = OrphanData.fromForm(
+        textValues: textValues,
+        dropdownValues: _dropdownValues,
+        profileImage: _profileImage,
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      );
+
       // TODO: Bilal & Mustafa
-      // 1- Implement actual API call
+      // 1- Implement actual API call with orphanData.toJson()
       // 2- Implement SQLite storage. SQLite should have a column isSynced to indicate if the data is synced with the server.
       // On app startup, check if there are unsynced records and sync them with the server by calling an API endpoint.
+      
+      // Example of how to use the data:
+      print('Orphan Name: ${orphanData.displayName}');
+      print('Orphan Data JSON: ${orphanData.toJson()}');
 
       // simulate save
       await Future.delayed(const Duration(seconds: 3));

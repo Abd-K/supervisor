@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'orphan_form.dart';
+import 'orphan_list_view.dart';
 
 void main() {
   runApp(const MyApp());
@@ -128,13 +129,7 @@ class ListTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'List Tab\nContent will be built here',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 18),
-      ),
-    );
+    return const OrphanListView();
   }
 }
 
